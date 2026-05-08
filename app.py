@@ -30,7 +30,7 @@ def ask_question(question, documents):
         context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:50000]}"
     
     response = client.chat.completions.create(
-        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        model=deployment,
         messages=[
             {"role": "system", "content": f"""You are an expert assistant for a mechanical contracting company. 
             Answer questions based ONLY on the provided construction documents. 
