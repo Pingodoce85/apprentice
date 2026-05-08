@@ -6,9 +6,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+endpoint = os.getenv("AZURE_OPENAI_ENDPOINT") or st.secrets.get("AZURE_OPENAI_ENDPOINT")
+api_key = os.getenv("AZURE_OPENAI_KEY") or st.secrets.get("AZURE_OPENAI_KEY")
+deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT") or st.secrets.get("AZURE_OPENAI_DEPLOYMENT")
+
 client = AzureOpenAI(
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_KEY"),
+    azure_endpoint=endpoint,
+    api_key=api_key,
     api_version="2024-02-01"
 )
 
@@ -28,7 +32,6 @@ def ask_question(question, documents):
     context = ""
     for doc in documents:
         context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:50000]}"
-    
     response = client.chat.completions.create(
         model=deployment,
         messages=[
@@ -36,7 +39,6 @@ def ask_question(question, documents):
             Answer questions based ONLY on the provided construction documents. 
             Always cite which document your answer comes from.
             If the answer is not in the documents, say so clearly.
-            
             Documents:
             {context}"""},
             {"role": "user", "content": question}
@@ -64,10 +66,9 @@ if prompt := st.chat_input("Ask about your construction documents..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-    
     with st.chat_message("assistant"):
         with st.spinner("Searching documents..."):
             response = ask_question(prompt, st.session_state.documents)
         st.markdown(response)
-    
     st.session_state.messages.append({"role": "assistant", "content": response})
+
