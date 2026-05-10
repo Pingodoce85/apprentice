@@ -43,6 +43,9 @@ def extract_text_from_pdfs(pdf_folder):
 
 
     try:
+        st.write(f"Storage account: {storage_account}")
+        st.write(f"Container: {container}")
+        st.write(f"Key length: {len(storage_key) if storage_key else 'None'}")
         from azure.storage.blob import BlobServiceClient
         connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
         blob_service_client = BlobServiceClient.from_connection_string(connect_str)
