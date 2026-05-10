@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def check_password():
+st.sidebar.write(f"Storage key exists: {bool(os.getenv('AZURE_STORAGE_KEY') or st.secrets.get('AZURE_STORAGE_KEY'))}")
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
