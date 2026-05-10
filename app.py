@@ -87,9 +87,9 @@ def ask_question(question, documents):
     )
     return response.choices[0].message.content
 
-st.set_page_config(page_title="P&J Construction GPT", page_icon="🏗️")
-st.title("🏗️ P&J Construction Document Assistant")
-st.caption("Ask questions about your construction specifications and standards")
+st.set_page_config(page_title="Apprentice", page_icon="🏗️")
+st.title("🏗️Apprenticet")
+st.caption("Your personal AI-powered mechnical contracting assistant")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
