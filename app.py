@@ -21,8 +21,10 @@ def extract_text_from_pdfs(pdf_folder):
     all_text = []
     storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
-    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
-    
+    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER", "construction-docs")   
+
+
+
     try:
         from azure.storage.blob import BlobServiceClient
         connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
