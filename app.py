@@ -16,16 +16,38 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
+
 def extract_text_from_pdfs(pdf_folder):
     all_text = []
-    for filename in os.listdir(pdf_folder):
-        if filename.endswith(".pdf"):
-            filepath = os.path.join(pdf_folder, filename)
-            doc = pymupdf.open(filepath)
-            text = ""
-            for page in doc:
-                text += page.get_text()
-            all_text.append({"filename": filename, "content": text})
+    storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
+    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
+    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
+    
+    try:
+        from azure.storage.blob import BlobServiceClient
+        connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        container_client = blob_service_client.get_container_client(container)
+        
+        for blob in container_client.list_blobs():
+            if blob.name.endswith(".pdf"):
+                blob_client = container_client.get_blob_client(blob.name)
+                pdf_bytes = blob_client.download_blob().readall()
+                doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+                text = ""
+                for page in doc:
+                    text += page.get_text()
+                all_text.append({"filename": blob.name, "content": text})
+    except Exception as e:
+        st.warning(f"Could not connect to Azure Storage, falling back to local files: {e}")
+        for filename in os.listdir(pdf_folder):
+            if filename.endswith(".pdf"):
+                filepath = os.path.join(pdf_folder, filename)
+                doc = pymupdf.open(filepath)
+                text = ""
+                for page in doc:
+                    text += page.get_text()
+                all_text.append({"filename": filename, "content": text})
     return all_text
 
 def ask_question(question, documents):

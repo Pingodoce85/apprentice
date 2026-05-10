@@ -2,4 +2,4 @@ openai
 pymupdf
 streamlit
 python-dotenv
-
+azure-storage-blob
