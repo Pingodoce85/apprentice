@@ -10,7 +10,7 @@ def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
-        st.title("🏗️ P&J Construction Document Assistant")
+        st.title("🏗️Apprentice")
         password = st.text_input("Enter password to access:", type="password")
         if st.button("Login"):
             correct = os.getenv("APP_PASSWORD") or st.secrets.get("APP_PASSWORD")
