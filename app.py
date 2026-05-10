@@ -88,7 +88,7 @@ def ask_question(question, documents):
     return response.choices[0].message.content
 
 st.set_page_config(page_title="Apprentice", page_icon="🏗️")
-st.title("🏗️Apprentict")
+st.title(" 🏗️Apprentiet")
 st.caption("Your personal AI-powered mechnical contracting assistant")
 
 if "messages" not in st.session_state:
