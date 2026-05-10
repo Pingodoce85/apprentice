@@ -6,6 +6,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def check_password():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    if not st.session_state.authenticated:
+        st.title("🏗️ P&J Construction Document Assistant")
+        password = st.text_input("Enter password to access:", type="password")
+        if st.button("Login"):
+            correct = os.getenv("APP_PASSWORD") or st.secrets.get("APP_PASSWORD")
+            if password == correct:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Incorrect password")
+        st.stop()
+
+check_password()
+
 endpoint = os.getenv("AZURE_OPENAI_ENDPOINT") or st.secrets.get("AZURE_OPENAI_ENDPOINT")
 api_key = os.getenv("AZURE_OPENAI_KEY") or st.secrets.get("AZURE_OPENAI_KEY")
 deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT") or st.secrets.get("AZURE_OPENAI_DEPLOYMENT")
