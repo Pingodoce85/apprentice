@@ -89,7 +89,7 @@ def ask_question(question, documents):
 
 st.set_page_config(page_title="Apprentice", page_icon="🏗️")
 st.title("🏗️ Apprentice")
-st.caption("Your personal AI-powered mechnical contracting assistant")
+st.caption("Your personal AI-powered mechanical contracting assistant")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
