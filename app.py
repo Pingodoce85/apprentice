@@ -10,7 +10,7 @@ def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
-        st.title("🏗️Apprentice")
+        st.title(" 🏗️Apprentice")
         password = st.text_input("Enter password to access:", type="password")
         if st.button("Login"):
             correct = os.getenv("APP_PASSWORD") or st.secrets.get("APP_PASSWORD")
@@ -88,7 +88,7 @@ def ask_question(question, documents):
     return response.choices[0].message.content
 
 st.set_page_config(page_title="Apprentice", page_icon="🏗️")
-st.title("🏗️Apprenticet")
+st.title("🏗️Apprentict")
 st.caption("Your personal AI-powered mechnical contracting assistant")
 
 if "messages" not in st.session_state:
