@@ -30,9 +30,7 @@ def extract_section_text(pdf_bytes, start_page, end_page):
     end_page = min(end_page, len(doc))
     for page_num in range(start_page - 1, end_page):
         page = doc[page_num]
-        text += "
-[Page " + str(page_num + 1) + "]
-"
+        text += "\n[Page " + str(page_num + 1) + "]\n"
         text += page.get_text()
         tables = page.find_tables()
         if tables.tables:
@@ -40,13 +38,9 @@ def extract_section_text(pdf_bytes, start_page, end_page):
             for table in tables.tables:
                 try:
                     df = table.to_pandas()
-                    text += "
-[TABLE]
-"
+                    text += "\n[TABLE]\n"
                     text += df.to_html(index=False)
-                    text += "
-[/TABLE]
-"
+                    text += "\n[/TABLE]\n"
                 except:
                     pass
     return text
