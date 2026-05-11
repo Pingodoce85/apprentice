@@ -6,6 +6,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import json
+
+def load_glossary():
+    try:
+        with open("glossary.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def enrich_with_glossary(question, glossary):
+    found_terms = []
+    question_upper = question.upper()
+    for term, definition in glossary.items():
+        if term.upper() in question_upper:
+            found_terms.append(f"{term}: {definition}")
+    if found_terms:
+        return "\n\nRelevant Technical Terms:\n" + "\n".join(found_terms)
+    return ""
+
+glossary = load_glossary()
+
+
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -109,6 +131,8 @@ def ask_question_stream(question, documents):
     context = ""
     for doc in documents:
         context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:50000]}"
+    context += enrich_with_glossary(question, glossary)
+    
     stream = client.chat.completions.create(
         model=deployment,
         stream=True,
