@@ -17,7 +17,7 @@ def check_password():
             if password == correct:
                 st.session_state.authenticated = True
                 st.rerun()
-
+            else:
                 st.error("Incorrect password")
         st.stop()
 
@@ -35,20 +35,16 @@ client = AzureOpenAI(
 
 def extract_text_from_storage():
     from azure.storage.blob import BlobServiceClient
-    import base64
     from pdf2image import convert_from_bytes
     import io
 
     storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
     container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
-    
     connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
     container_client = blob_service_client.get_container_client(container)
-    
     all_text = []
-    
     for blob in container_client.list_blobs():
         if blob.name.endswith(".pdf"):
             blob_client = container_client.get_blob_client(blob.name)
@@ -57,12 +53,9 @@ def extract_text_from_storage():
             text = ""
             for page in doc:
                 text += page.get_text()
-            text_length = len(text.strip())
-            if text_length < 100:
+            if len(text.strip()) < 100:
                 text = extract_with_vision(pdf_bytes, blob.name)
-
             all_text.append({"filename": blob.name, "content": text})
-    
     return all_text
 
 def extract_with_vision(pdf_bytes, filename):
@@ -102,12 +95,13 @@ def extract_with_vision(pdf_bytes, filename):
         full_text = f"Vision extraction failed: {e}"
     return full_text
 
-def ask_question(question, documents):
+def ask_question_stream(question, documents):
     context = ""
     for doc in documents:
         context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:50000]}"
-    response = client.chat.completions.create(
+    stream = client.chat.completions.create(
         model=deployment,
+        stream=True,
         messages=[
             {"role": "system", "content": f"""You are an expert assistant for a mechanical contracting company.
 Answer questions based ONLY on the provided construction documents.
@@ -118,7 +112,9 @@ Documents:
             {"role": "user", "content": question}
         ]
     )
-    return response.choices[0].message.content
+    for chunk in stream:
+        if chunk.choices and chunk.choices[0].delta.content is not None:
+            yield chunk.choices[0].delta.content
 
 st.set_page_config(page_title="Apprentice", page_icon="🏗️")
 st.title("🏗️ Apprentice")
@@ -140,7 +136,5 @@ if prompt := st.chat_input("Ask about your construction documents..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     with st.chat_message("assistant", avatar="👷"):
-        with st.spinner("Searching documents..."):
-            response = ask_question(prompt, st.session_state.documents)
-        st.markdown(response)
+        response = st.write_stream(ask_question_stream(prompt, st.session_state.documents))
     st.session_state.messages.append({"role": "assistant", "content": response})
