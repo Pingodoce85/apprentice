@@ -6,3 +6,4 @@ azure-storage-blob
 msal
 pdf2image
 pillow
+pandas

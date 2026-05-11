@@ -1,12 +1,11 @@
 import streamlit as st
 import pymupdf
 import os
+import json
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
-
-import json
 
 def load_glossary():
     try:
@@ -27,7 +26,6 @@ def enrich_with_glossary(question, glossary):
 
 glossary = load_glossary()
 
-
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -37,7 +35,6 @@ def check_password():
         [data-testid="InputInstructions"] {display: none;}
         </style>
         """, unsafe_allow_html=True)
-
         st.title("Apprentice")
         with st.form("login_form"):
             password = st.text_input("Enter password to access:", type="password")
@@ -50,8 +47,6 @@ def check_password():
             else:
                 st.error("Incorrect password")
         st.stop()
-
-
 
 check_password()
 
@@ -69,7 +64,7 @@ def extract_text_from_storage():
     from azure.storage.blob import BlobServiceClient
     from pdf2image import convert_from_bytes
     import io
-
+    import pandas as pd
     storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
     container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
@@ -84,7 +79,18 @@ def extract_text_from_storage():
             doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
             text = ""
             for page in doc:
-                text += page.get_text()
+                page_text = page.get_text()
+                tables = page.find_tables()
+                if tables.tables:
+                    for table in tables.tables:
+                        try:
+                            df = table.to_pandas()
+                            text += "\n[TABLE]\n"
+                            text += df.to_html(index=False)
+                            text += "\n[/TABLE]\n"
+                        except:
+                            pass
+                text += page_text
             if len(text.strip()) < 100:
                 text = extract_with_vision(pdf_bytes, blob.name)
             all_text.append({"filename": blob.name, "content": text})
@@ -132,7 +138,6 @@ def ask_question_stream(question, documents):
     for doc in documents:
         context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:50000]}"
     context += enrich_with_glossary(question, glossary)
-    
     stream = client.chat.completions.create(
         model=deployment,
         stream=True,
@@ -150,7 +155,7 @@ Documents:
         if chunk.choices and chunk.choices[0].delta.content is not None:
             yield chunk.choices[0].delta.content
 
-st.set_page_config(page_title="Apprentice️")
+st.set_page_config(page_title="Apprentice")
 st.title("Apprentice")
 st.caption("Your personal AI-powered mechanical contracting assistant.")
 
