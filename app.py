@@ -33,12 +33,10 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
-
 def extract_text_from_storage():
     from azure.storage.blob import BlobServiceClient
     import base64
     from pdf2image import convert_from_bytes
-    from PIL import Image
     import io
 
     storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
@@ -55,17 +53,14 @@ def extract_text_from_storage():
         if blob.name.endswith(".pdf"):
             blob_client = container_client.get_blob_client(blob.name)
             pdf_bytes = blob_client.download_blob().readall()
-            
-            # First try standard text extraction
             doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
             text = ""
             for page in doc:
                 text += page.get_text()
-            
-            # If text extraction yields little content use GPT-4o Vision
-            if len(text.strip()) < 100:
+            text_length = len(text.strip())
+            if text_length < 100:
                 text = extract_with_vision(pdf_bytes, blob.name)
-            
+            else:
             all_text.append({"filename": blob.name, "content": text})
     
     return all_text
@@ -74,7 +69,6 @@ def extract_with_vision(pdf_bytes, filename):
     import base64
     from pdf2image import convert_from_bytes
     import io
-    
     full_text = ""
     try:
         images = convert_from_bytes(pdf_bytes, dpi=150, first_page=1, last_page=10)
@@ -82,7 +76,6 @@ def extract_with_vision(pdf_bytes, filename):
             buffer = io.BytesIO()
             image.save(buffer, format="PNG")
             image_data = base64.b64encode(buffer.getvalue()).decode("utf-8")
-            
             response = client.chat.completions.create(
                 model=deployment,
                 messages=[
@@ -107,9 +100,7 @@ def extract_with_vision(pdf_bytes, filename):
             full_text += response.choices[0].message.content
     except Exception as e:
         full_text = f"Vision extraction failed: {e}"
-    
     return full_text
-
 
 def ask_question(question, documents):
     context = ""
@@ -119,11 +110,11 @@ def ask_question(question, documents):
         model=deployment,
         messages=[
             {"role": "system", "content": f"""You are an expert assistant for a mechanical contracting company.
-            Answer questions based ONLY on the provided construction documents.
-            Always cite which document your answer comes from.
-            If the answer is not in the documents, say so clearly.
-            Documents:
-            {context}"""},
+Answer questions based ONLY on the provided construction documents.
+Always cite which document your answer comes from.
+If the answer is not in the documents, say so clearly.
+Documents:
+{context}"""},
             {"role": "user", "content": question}
         ]
     )
@@ -148,7 +139,7 @@ if prompt := st.chat_input("Ask about your construction documents..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="👷"):
         with st.spinner("Searching documents..."):
             response = ask_question(prompt, st.session_state.documents)
         st.markdown(response)
