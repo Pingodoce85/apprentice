@@ -140,6 +140,46 @@ def extract_text_from_storage():
 
     return all_text
 
+
+
+def detect_color_content(image):
+    import cv2
+    import numpy as np
+    img_array = np.array(image)
+    hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+    saturation = hsv[:, :, 1]
+    color_pixels = np.sum(saturation > 50)
+    total_pixels = saturation.size
+    color_ratio = color_pixels / total_pixels
+    return color_ratio
+
+def preprocess_image(image, color_ratio):
+    import cv2
+    import numpy as np
+    img_array = np.array(image)
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    coords = np.column_stack(np.where(gray < 200))
+    if len(coords) > 100:
+        angle = cv2.minAreaRect(coords)[-1]
+        if angle < -45:
+            angle = 90 + angle
+        if abs(angle) > 0.5:
+            h, w = gray.shape
+            center = (w // 2, h // 2)
+            M = cv2.getRotationMatrix2D(center, angle, 1.0)
+            if color_ratio > 0.05:
+                img_array = cv2.warpAffine(img_array, M, (w, h))
+            else:
+                rotated = cv2.warpAffine(gray, M, (w, h))
+                _, img_array = cv2.threshold(rotated, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                img_array = cv2.fastNlMeansDenoising(img_array, h=10)
+    from PIL import Image
+    if len(img_array.shape) == 2:
+        return Image.fromarray(img_array)
+    return Image.fromarray(img_array)
+
+
+
 def extract_with_vision(pdf_bytes, filename):
     import base64
     from pdf2image import convert_from_bytes
@@ -147,10 +187,20 @@ def extract_with_vision(pdf_bytes, filename):
     full_text = ""
     try:
         images = convert_from_bytes(pdf_bytes, dpi=150, first_page=1, last_page=10)
-        for i, image in enumerate(images):
+
+                    color_ratio = detect_color_content(image)
+            image = preprocess_image(image, color_ratio)
+            has_color = color_ratio > 0.05
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            image_data = base64.b64encode(buffer.getvalue()).decode("utf-8")for i, image in enumerate(images):
+            color_ratio = detect_color_content(image)
+            image = preprocess_image(image, color_ratio)
+            has_color = color_ratio > 0.05
             buffer = io.BytesIO()
             image.save(buffer, format="PNG")
             image_data = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
             response = client.chat.completions.create(
                 model=deployment,
                 messages=[
@@ -165,7 +215,8 @@ def extract_with_vision(pdf_bytes, filename):
                             },
                             {
                                 "type": "text",
-                                "text": "You are reading a construction document. Extract ALL text you can see including handwritten notes, stamps, labels, dimensions, and annotations. Ignore coffee stains, smudges, and other artifacts. Return the extracted text only."
+                            
+    "text": f"You are reading a construction document. Extract ALL text you can see including handwritten notes, stamps, labels, dimensions, and annotations. Ignore coffee stains, smudges, and other artifacts. {'This document contains color annotations — red typically indicates revisions or rejections, blue indicates cold water systems, green indicates sanitary systems. Note the color of important annotations alongside their content.' if has_color else 'Return the extracted text only.'}"
                             }
                         ]
                     }

@@ -7,3 +7,4 @@ msal
 pdf2image
 pillow
 pandas
+opencv-python-headless
