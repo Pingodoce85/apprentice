@@ -11,8 +11,10 @@ def check_password():
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
         st.title("Apprentice")
-        password = st.text_input("Enter password to access:", type="password")
-        if st.button("Login"):
+        with st.form("login_form"):
+            password = st.text_input("Enter password to access:", type="password")
+            submitted = st.form_submit_button("Login")
+        if submitted:
             correct = os.getenv("APP_PASSWORD") or st.secrets.get("APP_PASSWORD")
             if password == correct:
                 st.session_state.authenticated = True
