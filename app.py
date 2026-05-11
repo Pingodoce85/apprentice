@@ -226,8 +226,16 @@ if "documents" not in st.session_state:
         st.session_state.documents = extract_text_from_storage()
 
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] == "assistant":
+        with st.chat_message("assistant", avatar="👷"):
+            st.markdown(message["content"])
+    else:
+        with st.chat_message("user"):
+            st.markdown(message["content"])
+
+
+
+
 
 if prompt := st.chat_input("Ask about your construction documents..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
