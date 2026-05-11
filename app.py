@@ -207,7 +207,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "documents" not in st.session_state:
-    with st.spinner("Loading construction documents..."):
+    with st.spinner("Initializing document database..."):
         st.session_state.documents = extract_text_from_storage()
 
 for message in st.session_state.messages:
