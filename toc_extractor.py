@@ -30,8 +30,8 @@ def extract_section_text(pdf_bytes, start_page, end_page):
     end_page = min(end_page, len(doc))
     for page_num in range(start_page - 1, end_page):
         page = doc[page_num]
-        text += f"
-[Page {page_num + 1}]
+        text += "
+[Page " + str(page_num + 1) + "]
 "
         text += page.get_text()
         tables = page.find_tables()
