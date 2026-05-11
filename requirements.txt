@@ -3,3 +3,4 @@ pymupdf
 streamlit
 python-dotenv
 azure-storage-blob
+msal
