@@ -33,36 +33,28 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
-
 def extract_text_from_onedrive():
     import msal
     import requests
-    
     client_id = os.getenv("ONEDRIVE_CLIENT_ID") or st.secrets.get("ONEDRIVE_CLIENT_ID")
     client_secret = os.getenv("ONEDRIVE_CLIENT_SECRET") or st.secrets.get("ONEDRIVE_CLIENT_SECRET")
     tenant_id = os.getenv("ONEDRIVE_TENANT_ID") or st.secrets.get("ONEDRIVE_TENANT_ID")
-    
     authority = f"https://login.microsoftonline.com/{tenant_id}"
     app = msal.ConfidentialClientApplication(
         client_id,
         authority=authority,
         client_credential=client_secret
     )
-    
     token = app.acquire_token_for_client(
         scopes=["https://graph.microsoft.com/.default"]
     )
-    
     if "access_token" not in token:
         st.error(f"Authentication failed: {token.get('error_description')}")
         return []
-    
     headers = {"Authorization": f"Bearer {token['access_token']}"}
-    
     folder_url = "https://graph.microsoft.com/v1.0/me/drive/root:/apprentice-docs:/children"
     response = requests.get(folder_url, headers=headers)
     files = response.json().get("value", [])
-    
     all_text = []
     for file in files:
         if file["name"].endswith(".pdf"):
@@ -73,38 +65,6 @@ def extract_text_from_onedrive():
             for page in doc:
                 text += page.get_text()
             all_text.append({"filename": file["name"], "content": text})
-    
-    return all_text
-
-
-    try:
-        st.write(f"Storage account: {storage_account}")
-        st.write(f"Container: {container}")
-        st.write(f"Key length: {len(storage_key) if storage_key else 'None'}")
-        from azure.storage.blob import BlobServiceClient
-        connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
-        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-        container_client = blob_service_client.get_container_client(container)
-        
-        for blob in container_client.list_blobs():
-            if blob.name.endswith(".pdf"):
-                blob_client = container_client.get_blob_client(blob.name)
-                pdf_bytes = blob_client.download_blob().readall()
-                doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-                text = ""
-                for page in doc:
-                    text += page.get_text()
-                all_text.append({"filename": blob.name, "content": text})
-    except Exception as e:
-        st.warning(f"Could not connect to Azure Storage, falling back to local files: {e}")
-        for filename in os.listdir(pdf_folder):
-            if filename.endswith(".pdf"):
-                filepath = os.path.join(pdf_folder, filename)
-                doc = pymupdf.open(filepath)
-                text = ""
-                for page in doc:
-                    text += page.get_text()
-                all_text.append({"filename": filename, "content": text})
     return all_text
 
 def ask_question(question, documents):
@@ -114,8 +74,8 @@ def ask_question(question, documents):
     response = client.chat.completions.create(
         model=deployment,
         messages=[
-            {"role": "system", "content": f"""You are an expert assistant for a mechanical contracting company. 
-            Answer questions based ONLY on the provided construction documents. 
+            {"role": "system", "content": f"""You are an expert assistant for a mechanical contracting company.
+            Answer questions based ONLY on the provided construction documents.
             Always cite which document your answer comes from.
             If the answer is not in the documents, say so clearly.
             Documents:
@@ -127,27 +87,4 @@ def ask_question(question, documents):
 
 st.set_page_config(page_title="Apprentice", page_icon="🏗️")
 st.title("🏗️ Apprentice")
-st.caption("Your personal AI-powered mechanical contracting assistant")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-if "documents" not in st.session_state:
-    with st.spinner("Loading construction documents..."):
-        st.session_state.documents = extract_text_from_onedrive()
-    st.success(f"Loaded {len(st.session_state.documents)} documents")
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-if prompt := st.chat_input("Ask about your construction documents..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    with st.chat_message("assistant"):
-        with st.spinner("Searching documents..."):
-            response = ask_question(prompt, st.session_state.documents)
-        st.markdown(response)
-    st.session_state.messages.append({"role": "assistant", "content": response})
-
+st.caption("Your personal AI-po
