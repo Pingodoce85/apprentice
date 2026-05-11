@@ -231,10 +231,10 @@ def ask_question_stream(question, documents):
                     context += section_text[:15000]
                     citation_notes.append(filename + " -> " + section["title"] + ", p." + str(section["start_page"]))
             else:
-                context += "\n\nDocument: " + filename + "\n" + doc["content"][:30000]
+                context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
                 citation_notes.append(filename + " -> full document search")
         except Exception as e:
-            context += "\n\nDocument: " + filename + "\n" + doc["content"][:30000]
+            context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
 
     context += enrich_with_glossary(question, glossary)
     citation_hint = "\n\nSections searched: " + "; ".join(citation_notes)
