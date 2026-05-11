@@ -118,7 +118,7 @@ Documents:
 
 st.set_page_config(page_title="Apprentice️")
 st.title("Apprentice")
-st.caption("Your personal AI-powered mechanical contracting assistant")
+st.caption("Your personal AI-powered mechanical contracting assistant.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
