@@ -35,7 +35,7 @@ def check_password():
         [data-testid="InputInstructions"] {display: none;}
         </style>
         """, unsafe_allow_html=True)
-        st.title("Apprentice")
+        st.title("Fieldbook")
         with st.form("login_form"):
             password = st.text_input("Enter password to access:", type="password")
             submitted = st.form_submit_button("Login")
@@ -218,8 +218,8 @@ def ask_question_stream(question, documents):
         if chunk.choices and chunk.choices[0].delta.content is not None:
             yield chunk.choices[0].delta.content
 
-st.set_page_config(page_title="Apprentice")
-st.title("Apprentice")
+st.set_page_config(page_title="Fieldbook")
+st.title("Fieldbook")
 st.caption("Your personal AI-powered mechanical contracting assistant.")
 
 if "messages" not in st.session_state:
