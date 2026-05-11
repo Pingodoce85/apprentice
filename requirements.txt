@@ -9,3 +9,5 @@ pillow
 pandas
 opencv-python-headless
 rank-bm25
+azure-ai-formrecognizer
+azure-ai-formrecognizer

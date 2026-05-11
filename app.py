@@ -150,7 +150,12 @@ def extract_text_from_storage():
                             pass
                 text += page_text
             if len(text.strip()) < 100:
-                text = extract_with_vision(pdf_bytes, blob.name)
+                from doc_intelligence import extract_with_document_intelligence
+                di_text = extract_with_document_intelligence(pdf_bytes)
+                if di_text and len(di_text.strip()) > 100:
+                    text = di_text
+                else:
+                    text = extract_with_vision(pdf_bytes, blob.name)
             all_text.append({"filename": blob.name, "content": text})
 
     try:
