@@ -60,20 +60,53 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
+
+
+
+
+@st.cache_resource
 def extract_text_from_storage():
     from azure.storage.blob import BlobServiceClient
     from pdf2image import convert_from_bytes
     import io
     import pandas as pd
+
     storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
     storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
     container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
     connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
     container_client = blob_service_client.get_container_client(container)
-    all_text = []
+
+    # Check for existing cache
+    cache_blob_name = "_cache.json"
+    try:
+        cache_blob = container_client.get_blob_client(cache_blob_name)
+        cache_data = cache_blob.download_blob().readall()
+        cached_docs = json.loads(cache_data)
+        
+        # Get list of current PDF blobs
+        current_pdfs = set()
+        for blob in container_client.list_blobs():
+            if blob.name.endswith(".pdf"):
+                current_pdfs.add(blob.name)
+        
+        # Get list of cached PDFs
+        cached_pdfs = set(doc["filename"] for doc in cached_docs)
+        
+        # If cache is complete return it
+        if current_pdfs == cached_pdfs:
+            return cached_docs
+            
+    except Exception:
+        cached_docs = []
+
+    # Process documents
+    all_text = list(cached_docs) if cached_docs else []
+    cached_filenames = set(doc["filename"] for doc in all_text)
+
     for blob in container_client.list_blobs():
-        if blob.name.endswith(".pdf"):
+        if blob.name.endswith(".pdf") and blob.name not in cached_filenames:
             blob_client = container_client.get_blob_client(blob.name)
             pdf_bytes = blob_client.download_blob().readall()
             doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
@@ -94,6 +127,17 @@ def extract_text_from_storage():
             if len(text.strip()) < 100:
                 text = extract_with_vision(pdf_bytes, blob.name)
             all_text.append({"filename": blob.name, "content": text})
+
+    # Save cache to Azure
+    try:
+        cache_blob = container_client.get_blob_client(cache_blob_name)
+        cache_blob.upload_blob(
+            json.dumps(all_text),
+            overwrite=True
+        )
+    except Exception as e:
+        pass
+
     return all_text
 
 def extract_with_vision(pdf_bytes, filename):
