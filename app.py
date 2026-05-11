@@ -87,4 +87,27 @@ def ask_question(question, documents):
 
 st.set_page_config(page_title="Apprentice", page_icon="🏗️")
 st.title("🏗️ Apprentice")
-st.caption("Your personal AI-po
+st.caption("Your personal AI-powered mechanical contracting assistant")
+wered mechanical contracting assistant")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "documents" not in st.session_state:
+    with st.spinner("Loading construction documents..."):
+        st.session_state.documents = extract_text_from_onedrive()
+    st.success(f"Loaded {len(st.session_state.documents)} documents")
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Ask about your construction documents..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    with st.chat_message("assistant"):
+        with st.spinner("Searching documents..."):
+            response = ask_question(prompt, st.session_state.documents)
+        st.markdown(response)
+    st.session_state.messages.append({"role": "assistant", "content": response})
