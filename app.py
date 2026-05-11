@@ -17,7 +17,7 @@ def check_password():
             if password == correct:
                 st.session_state.authenticated = True
                 st.rerun()
-            else:
+
                 st.error("Incorrect password")
         st.stop()
 
@@ -60,7 +60,7 @@ def extract_text_from_storage():
             text_length = len(text.strip())
             if text_length < 100:
                 text = extract_with_vision(pdf_bytes, blob.name)
-            else:
+
             all_text.append({"filename": blob.name, "content": text})
     
     return all_text
