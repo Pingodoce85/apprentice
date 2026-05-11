@@ -33,39 +33,32 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
-def extract_text_from_onedrive():
-    import msal
+def extract_text_from_storage():
     import requests
-    client_id = os.getenv("ONEDRIVE_CLIENT_ID") or st.secrets.get("ONEDRIVE_CLIENT_ID")
-    client_secret = os.getenv("ONEDRIVE_CLIENT_SECRET") or st.secrets.get("ONEDRIVE_CLIENT_SECRET")
-    tenant_id = os.getenv("ONEDRIVE_TENANT_ID") or st.secrets.get("ONEDRIVE_TENANT_ID")
-    authority = f"https://login.microsoftonline.com/{tenant_id}"
-    app = msal.ConfidentialClientApplication(
-        client_id,
-        authority=authority,
-        client_credential=client_secret
-    )
-    token = app.acquire_token_for_client(
-        scopes=["https://graph.microsoft.com/.default"]
-    )
-    if "access_token" not in token:
-        st.error(f"Authentication failed: {token.get('error_description')}")
-        return []
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-    folder_url = "https://graph.microsoft.com/v1.0/me/drive/root:/apprentice-docs:/children"
-    response = requests.get(folder_url, headers=headers)
-    files = response.json().get("value", [])
+    storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
+    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
+    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
+    
     all_text = []
-    for file in files:
-        if file["name"].endswith(".pdf"):
-            download_url = file["@microsoft.graph.downloadUrl"]
-            pdf_bytes = requests.get(download_url).content
-            doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-            text = ""
-            for page in doc:
-                text += page.get_text()
-            all_text.append({"filename": file["name"], "content": text})
+    try:
+        from azure.storage.blob import BlobServiceClient
+        connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        container_client = blob_service_client.get_container_client(container)
+        for blob in container_client.list_blobs():
+            if blob.name.endswith(".pdf"):
+                blob_client = container_client.get_blob_client(blob.name)
+                pdf_bytes = blob_client.download_blob().readall()
+                doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+                text = ""
+                for page in doc:
+                    text += page.get_text()
+                all_text.append({"filename": blob.name, "content": text})
+        st.success(f"Loaded {len(all_text)} documents from Azure Storage")
+    except Exception as e:
+        st.error(f"Azure Storage error: {e}")
     return all_text
+
 
 def ask_question(question, documents):
     context = ""
@@ -94,7 +87,7 @@ if "messages" not in st.session_state:
 
 if "documents" not in st.session_state:
     with st.spinner("Loading construction documents..."):
-        st.session_state.documents = extract_text_from_onedrive()
+        st.session_state.documents = extract_text_from_storage()
     st.success(f"Loaded {len(st.session_state.documents)} documents")
 
 for message in st.session_state.messages:
