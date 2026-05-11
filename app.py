@@ -202,21 +202,63 @@ def extract_with_vision(pdf_bytes, filename):
     return full_text
 
 def ask_question_stream(question, documents):
+    from toc_extractor import extract_toc, extract_section_text
+    from section_router import route_question_to_section
+    from azure.storage.blob import BlobServiceClient
+
+    storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
+    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
+    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
+    connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    container_client = blob_service_client.get_container_client(container)
+
     context = ""
+    citation_notes = []
+
     for doc in documents:
-        context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:90000]}"
+        filename = doc["filename"]
+        try:
+            blob_client = container_client.get_blob_client(filename)
+            pdf_bytes = blob_client.download_blob().readall()
+            toc = extract_toc(pdf_bytes)
+            match = route_question_to_section(question, toc)
+            if match:
+                section_text = extract_section_text(pdf_bytes, match["start_page"], match["end_page"])
+                context += "\n\nDocument: " + filename
+                context += "\nSection: " + match["title"] + " (Pages " + str(match["start_page"]) + "-" + str(match["end_page"]) + ")\n"
+                context += section_text[:30000]
+                citation_notes.append(filename + " -> " + match["title"] + ", p." + str(match["start_page"]))
+            else:
+                context += "\n\nDocument: " + filename + "\n" + doc["content"][:30000]
+                citation_notes.append(filename + " -> full document search")
+        except Exception as e:
+            context += "\n\nDocument: " + filename + "\n" + doc["content"][:30000]
+
     context += enrich_with_glossary(question, glossary)
+    citation_hint = "\n\nSections searched: " + "; ".join(citation_notes)
+
     stream = client.chat.completions.create(
         model=deployment,
         stream=True,
         messages=[
-            {"role": "system", "content": f"You are an expert assistant for a mechanical contracting company. Answer questions based ONLY on the provided construction documents. Always cite which document your answer comes from. If the answer is not in the documents, say so clearly. Documents: {context}"},
+            {
+                "role": "system",
+                "content": (
+                    f"You are an expert assistant for a mechanical contracting company. "
+                    f"Answer questions based ONLY on the provided construction documents. "
+                    f"Always cite the document name, section title, and page number in your answer. "
+                    f"If the answer is not in the documents, say so clearly.\n\n"
+                    f"Documents:{context}{citation_hint}"
+                )
+            },
             {"role": "user", "content": question}
         ]
     )
     for chunk in stream:
         if chunk.choices and chunk.choices[0].delta.content is not None:
             yield chunk.choices[0].delta.content
+
 
 st.set_page_config(page_title="Fieldbook")
 st.title("Fieldbook")
