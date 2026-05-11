@@ -80,6 +80,9 @@ def preprocess_image(image, color_ratio):
         angle = cv2.minAreaRect(coords)[-1]
         if angle < -45:
             angle = 90 + angle
+        if abs(angle) > 80:
+            angle = 180 + angle
+
         if abs(angle) > 0.5:
             h, w = gray.shape
             center = (w // 2, h // 2)
@@ -185,7 +188,8 @@ def extract_with_vision(pdf_bytes, filename):
                             },
                             {
                                 "type": "text",
-                                "text": f"You are reading a construction document. Extract ALL text you can see including handwritten notes, stamps, labels, dimensions, and annotations. Ignore coffee stains, smudges, and other artifacts. {color_note}"
+                                "text": "You are reading a construction document. Extract ALL text including upside down or rotated text. Mark circled items as CIRCLED: [item], highlighted text as HIGHLIGHTED: [item], handwritten notes as ANNOTATION: [note], red markups as REVISION: [content], stamps as STAMP: [content]. Ignore coffee stains and paper damage. Note color coded elements."
+
                             }
                         ]
                     }
