@@ -54,7 +54,6 @@ def extract_text_from_storage():
                 for page in doc:
                     text += page.get_text()
                 all_text.append({"filename": blob.name, "content": text})
-        st.success(f"Loaded {len(all_text)} documents from Azure Storage")
     except Exception as e:
         st.error(f"Azure Storage error: {e}")
     return all_text
@@ -88,7 +87,6 @@ if "messages" not in st.session_state:
 if "documents" not in st.session_state:
     with st.spinner("Loading construction documents..."):
         st.session_state.documents = extract_text_from_storage()
-    st.success(f"Loaded {len(st.session_state.documents)} documents")
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
