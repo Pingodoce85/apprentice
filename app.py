@@ -219,8 +219,21 @@ def ask_question_stream(question, documents):
     for doc in documents:
         filename = doc["filename"]
         try:
-            context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
-            citation_notes.append(filename + " -> full document search")
+            blob_client = container_client.get_blob_client(filename)
+            pdf_bytes = blob_client.download_blob().readall()
+            toc = extract_toc(pdf_bytes)
+            match = route_question_to_section(question, toc)
+            if match:
+                for section in match:
+                    section_text = extract_section_text(pdf_bytes, section["start_page"], section["end_page"])
+                    context += "\n\nDocument: " + filename
+                    context += "\nSection: " + section["title"] + " (Pages " + str(section["start_page"]) + "-" + str(section["end_page"]) + ")\n"
+                    context += section_text[:20000]
+                    citation_notes.append(filename + " -> " + section["title"] + ", p." + str(section["start_page"]))
+                context += "\n\nFull document fallback: " + filename + "\n" + doc["content"][:50000]
+            else:
+                context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
+                citation_notes.append(filename + " -> full document search")
         except Exception as e:
             context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
 
