@@ -60,88 +60,6 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
-
-
-
-
-@st.cache_resource
-def extract_text_from_storage():
-    from azure.storage.blob import BlobServiceClient
-    from pdf2image import convert_from_bytes
-    import io
-    import pandas as pd
-
-    storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
-    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
-    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
-    connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
-    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-    container_client = blob_service_client.get_container_client(container)
-
-    # Check for existing cache
-    cache_blob_name = "_cache.json"
-    try:
-        cache_blob = container_client.get_blob_client(cache_blob_name)
-        cache_data = cache_blob.download_blob().readall()
-        cached_docs = json.loads(cache_data)
-        
-        # Get list of current PDF blobs
-        current_pdfs = set()
-        for blob in container_client.list_blobs():
-            if blob.name.endswith(".pdf"):
-                current_pdfs.add(blob.name)
-        
-        # Get list of cached PDFs
-        cached_pdfs = set(doc["filename"] for doc in cached_docs)
-        
-        # If cache is complete return it
-        if current_pdfs == cached_pdfs:
-            return cached_docs
-            
-    except Exception:
-        cached_docs = []
-
-    # Process documents
-    all_text = list(cached_docs) if cached_docs else []
-    cached_filenames = set(doc["filename"] for doc in all_text)
-
-    for blob in container_client.list_blobs():
-        if blob.name.endswith(".pdf") and blob.name not in cached_filenames:
-            blob_client = container_client.get_blob_client(blob.name)
-            pdf_bytes = blob_client.download_blob().readall()
-            doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-            text = ""
-            for page in doc:
-                page_text = page.get_text()
-                tables = page.find_tables()
-                if tables.tables:
-                    for table in tables.tables:
-                        try:
-                            df = table.to_pandas()
-                            text += "\n[TABLE]\n"
-                            text += df.to_html(index=False)
-                            text += "\n[/TABLE]\n"
-                        except:
-                            pass
-                text += page_text
-            if len(text.strip()) < 100:
-                text = extract_with_vision(pdf_bytes, blob.name)
-            all_text.append({"filename": blob.name, "content": text})
-
-    # Save cache to Azure
-    try:
-        cache_blob = container_client.get_blob_client(cache_blob_name)
-        cache_blob.upload_blob(
-            json.dumps(all_text),
-            overwrite=True
-        )
-    except Exception as e:
-        pass
-
-    return all_text
-
-
-
 def detect_color_content(image):
     import cv2
     import numpy as np
@@ -150,8 +68,7 @@ def detect_color_content(image):
     saturation = hsv[:, :, 1]
     color_pixels = np.sum(saturation > 50)
     total_pixels = saturation.size
-    color_ratio = color_pixels / total_pixels
-    return color_ratio
+    return color_pixels / total_pixels
 
 def preprocess_image(image, color_ratio):
     import cv2
@@ -178,7 +95,68 @@ def preprocess_image(image, color_ratio):
         return Image.fromarray(img_array)
     return Image.fromarray(img_array)
 
+@st.cache_resource
+def extract_text_from_storage():
+    from azure.storage.blob import BlobServiceClient
+    from pdf2image import convert_from_bytes
+    import io
+    import pandas as pd
 
+    storage_key = os.getenv("AZURE_STORAGE_KEY") or st.secrets.get("AZURE_STORAGE_KEY")
+    storage_account = os.getenv("AZURE_STORAGE_ACCOUNT") or st.secrets.get("AZURE_STORAGE_ACCOUNT")
+    container = os.getenv("AZURE_STORAGE_CONTAINER") or st.secrets.get("AZURE_STORAGE_CONTAINER")
+    connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={storage_key};EndpointSuffix=core.windows.net"
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    container_client = blob_service_client.get_container_client(container)
+
+    cache_blob_name = "_cache.json"
+    try:
+        cache_blob = container_client.get_blob_client(cache_blob_name)
+        cache_data = cache_blob.download_blob().readall()
+        cached_docs = json.loads(cache_data)
+        current_pdfs = set()
+        for blob in container_client.list_blobs():
+            if blob.name.endswith(".pdf"):
+                current_pdfs.add(blob.name)
+        cached_pdfs = set(doc["filename"] for doc in cached_docs)
+        if current_pdfs == cached_pdfs:
+            return cached_docs
+    except Exception:
+        cached_docs = []
+
+    all_text = list(cached_docs) if cached_docs else []
+    cached_filenames = set(doc["filename"] for doc in all_text)
+
+    for blob in container_client.list_blobs():
+        if blob.name.endswith(".pdf") and blob.name not in cached_filenames:
+            blob_client = container_client.get_blob_client(blob.name)
+            pdf_bytes = blob_client.download_blob().readall()
+            doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+            text = ""
+            for page in doc:
+                page_text = page.get_text()
+                tables = page.find_tables()
+                if tables.tables:
+                    for table in tables.tables:
+                        try:
+                            df = table.to_pandas()
+                            text += "\n[TABLE]\n"
+                            text += df.to_html(index=False)
+                            text += "\n[/TABLE]\n"
+                        except:
+                            pass
+                text += page_text
+            if len(text.strip()) < 100:
+                text = extract_with_vision(pdf_bytes, blob.name)
+            all_text.append({"filename": blob.name, "content": text})
+
+    try:
+        cache_blob = container_client.get_blob_client(cache_blob_name)
+        cache_blob.upload_blob(json.dumps(all_text), overwrite=True)
+    except Exception:
+        pass
+
+    return all_text
 
 def extract_with_vision(pdf_bytes, filename):
     import base64
@@ -187,20 +165,14 @@ def extract_with_vision(pdf_bytes, filename):
     full_text = ""
     try:
         images = convert_from_bytes(pdf_bytes, dpi=150, first_page=1, last_page=10)
-
-                    color_ratio = detect_color_content(image)
-            image = preprocess_image(image, color_ratio)
-            has_color = color_ratio > 0.05
-            buffer = io.BytesIO()
-            image.save(buffer, format="PNG")
-            image_data = base64.b64encode(buffer.getvalue()).decode("utf-8")for i, image in enumerate(images):
+        for i, image in enumerate(images):
             color_ratio = detect_color_content(image)
             image = preprocess_image(image, color_ratio)
             has_color = color_ratio > 0.05
             buffer = io.BytesIO()
             image.save(buffer, format="PNG")
             image_data = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
+            color_note = "This document contains color annotations. Red typically indicates revisions or rejections, blue indicates cold water systems, green indicates sanitary systems. Note the color of important annotations alongside their content." if has_color else "Return the extracted text only."
             response = client.chat.completions.create(
                 model=deployment,
                 messages=[
@@ -209,14 +181,11 @@ def extract_with_vision(pdf_bytes, filename):
                         "content": [
                             {
                                 "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{image_data}"
-                                }
+                                "image_url": {"url": f"data:image/png;base64,{image_data}"}
                             },
                             {
                                 "type": "text",
-                            
-    "text": f"You are reading a construction document. Extract ALL text you can see including handwritten notes, stamps, labels, dimensions, and annotations. Ignore coffee stains, smudges, and other artifacts. {'This document contains color annotations — red typically indicates revisions or rejections, blue indicates cold water systems, green indicates sanitary systems. Note the color of important annotations alongside their content.' if has_color else 'Return the extracted text only.'}"
+                                "text": f"You are reading a construction document. Extract ALL text you can see including handwritten notes, stamps, labels, dimensions, and annotations. Ignore coffee stains, smudges, and other artifacts. {color_note}"
                             }
                         ]
                     }
@@ -237,12 +206,7 @@ def ask_question_stream(question, documents):
         model=deployment,
         stream=True,
         messages=[
-            {"role": "system", "content": f"""You are an expert assistant for a mechanical contracting company.
-Answer questions based ONLY on the provided construction documents.
-Always cite which document your answer comes from.
-If the answer is not in the documents, say so clearly.
-Documents:
-{context}"""},
+            {"role": "system", "content": f"You are an expert assistant for a mechanical contracting company. Answer questions based ONLY on the provided construction documents. Always cite which document your answer comes from. If the answer is not in the documents, say so clearly. Documents: {context}"},
             {"role": "user", "content": question}
         ]
     )
