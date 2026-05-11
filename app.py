@@ -10,6 +10,12 @@ def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     if not st.session_state.authenticated:
+        st.markdown("""
+        <style>
+        [data-testid="InputInstructions"] {display: none;}
+        </style>
+        """, unsafe_allow_html=True)
+
         st.title("Apprentice")
         with st.form("login_form"):
             password = st.text_input("Enter password to access:", type="password")
@@ -22,6 +28,8 @@ def check_password():
             else:
                 st.error("Incorrect password")
         st.stop()
+
+
 
 check_password()
 
