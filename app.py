@@ -204,7 +204,7 @@ def extract_with_vision(pdf_bytes, filename):
 def ask_question_stream(question, documents):
     context = ""
     for doc in documents:
-        context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:50000]}"
+        context += f"\n\nDocument: {doc['filename']}\n{doc['content'][:90000]}"
     context += enrich_with_glossary(question, glossary)
     stream = client.chat.completions.create(
         model=deployment,
