@@ -15,16 +15,22 @@ def route_question_to_section(question, toc):
     scores = bm25.get_scores(query_tokens)
     best_idx = int(scores.argmax())
     best_score = scores[best_idx]
-    if best_score < 0.5:
+    if best_score < 1.0:
         return None
-    start_page = pages[best_idx]
-    if best_idx + 1 < len(pages):
-        end_page = pages[best_idx + 1] - 1
-    else:
-        end_page = start_page + 10
-    return {
-        "title": titles[best_idx],
-        "start_page": start_page,
-        "end_page": end_page,
-        "score": best_score
-    }
+    top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:3]
+    results = []
+    for idx in top_indices:
+        if scores[idx] < 1.0:
+            continue
+        start_page = pages[idx]
+        if idx + 1 < len(pages):
+            end_page = pages[idx + 1] - 1
+        else:
+            end_page = start_page + 10
+        results.append({
+            "title": titles[idx],
+            "start_page": start_page,
+            "end_page": end_page,
+            "score": scores[idx]
+        })
+    return results if results else None

@@ -224,11 +224,12 @@ def ask_question_stream(question, documents):
             toc = extract_toc(pdf_bytes)
             match = route_question_to_section(question, toc)
             if match:
-                section_text = extract_section_text(pdf_bytes, match["start_page"], match["end_page"])
-                context += "\n\nDocument: " + filename
-                context += "\nSection: " + match["title"] + " (Pages " + str(match["start_page"]) + "-" + str(match["end_page"]) + ")\n"
-                context += section_text[:30000]
-                citation_notes.append(filename + " -> " + match["title"] + ", p." + str(match["start_page"]))
+                for section in match:
+                    section_text = extract_section_text(pdf_bytes, section["start_page"], section["end_page"])
+                    context += "\n\nDocument: " + filename
+                    context += "\nSection: " + section["title"] + " (Pages " + str(section["start_page"]) + "-" + str(section["end_page"]) + ")\n"
+                    context += section_text[:15000]
+                    citation_notes.append(filename + " -> " + section["title"] + ", p." + str(section["start_page"]))
             else:
                 context += "\n\nDocument: " + filename + "\n" + doc["content"][:30000]
                 citation_notes.append(filename + " -> full document search")
