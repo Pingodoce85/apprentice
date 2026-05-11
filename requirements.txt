@@ -8,3 +8,4 @@ pdf2image
 pillow
 pandas
 opencv-python-headless
+rank-bm25
