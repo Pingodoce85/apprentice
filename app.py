@@ -244,7 +244,14 @@ def ask_question_stream(question, documents):
 
     context += enrich_with_glossary(question, glossary)
 
-    if "email" in question.lower() or "wrote" in question.lower() or "sent" in question.lower() or "said" in question.lower():
+    from thefuzz import fuzz
+    email_keywords = ["email", "wrote", "sent", "said", "submittal", "approved", "engineer", "correspondence", "message", "confirm", "rfi", "vendor", "contractor"]
+    question_words = question.lower().split()
+    email_trigger = any(
+        any(fuzz.ratio(qword, keyword) > 80 for keyword in email_keywords)
+        for qword in question_words
+    )
+    if email_trigger:
         try:
             from email_rag import fetch_emails, format_emails_for_context
             user_email = os.getenv("OUTLOOK_USER_EMAIL") or st.secrets.get("OUTLOOK_USER_EMAIL")
