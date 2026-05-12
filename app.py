@@ -33,7 +33,7 @@ def check_password():
         st.markdown("""
         <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-html, body, [class*="css"], p, div, span, input, textarea, button { font-family: 'Inter', sans-serif !important; }
+html, body, [class*="css"], p, div, span, input, textarea, button, [data-testid="stChatMessage"], [data-testid="stMarkdownContainer"], [data-testid="stChatInput"] * { font-family: 'Inter', sans-serif !important; }
         [data-testid="InputInstructions"] {display: none;}
         </style>
         """, unsafe_allow_html=True)
