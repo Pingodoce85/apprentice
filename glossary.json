@@ -27,5 +27,21 @@
   "Submittal": "A document or sample submitted by a contractor for design team review and approval before installation.",
   "NFPA 13": "National Fire Protection Association standard for the installation of sprinkler systems.",
   "P&ID": "Piping and Instrumentation Diagram - a detailed diagram showing piping, instrumentation, and control systems.",
-  "DX": "Direct Expansion - a refrigeration system where refrigerant directly cools the air or water, as opposed to a chilled water system."
+  "DX": "Direct Expansion - a refrigeration system where refrigerant directly cools the air or water, as opposed to a chilled water system.",
+  "CCF": "Contract Change Form - a document used to formally modify the scope, cost, or schedule of a construction contract.",
+  "OSC": "Owner Supplemental Condition - a document issued by the owner to clarify or modify contract requirements.",
+  "Supplemental Instructions": "Instructions issued by the architect or engineer to clarify the contract documents without changing the contract sum or time.",
+  "ACC": "Autodesk Construction Cloud - a project management platform used by contractors for document management, RFIs, submittals, and field coordination.",
+  "Procore": "A cloud-based construction management platform used for project management, document control, RFIs, submittals, and financial management.",
+  "Fieldwire": "A field management platform used for task management, drawing markup, and punch lists on construction projects.",
+  "AS400": "IBM AS/400 - an enterprise business system used by P&J for job costing, payroll, purchase orders, accounts payable, and financial reporting.",
+  "GMP": "Guaranteed Maximum Price - a contract type where the contractor agrees to complete the project for a set maximum price.",
+  "SWPPP": "Stormwater Pollution Prevention Plan - a document required by law that outlines measures to prevent stormwater pollution on a construction site.",
+  "IFC": "Issued for Construction - the final set of drawings and specifications released for actual construction.",
+  "CCO": "Contract Change Order - a formal amendment to the construction contract that modifies scope, cost, or schedule.",
+  "NTP": "Notice to Proceed - a written authorization from the owner to the contractor to begin work.",
+  "CO": "Change Order - a written amendment to the construction contract modifying scope, price, or schedule.",
+  "LOI": "Letter of Intent - a document indicating intent to award a contract before the formal contract is executed.",
+  "AIA": "American Institute of Architects - sets standard contract documents widely used in construction.",
+  "ASI": "Architect Supplemental Instruction - a minor change issued by the architect that does not affect contract sum or time."
 }
