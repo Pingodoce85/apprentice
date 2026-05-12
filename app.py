@@ -32,6 +32,8 @@ def check_password():
     if not st.session_state.authenticated:
         st.markdown("""
         <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
         [data-testid="InputInstructions"] {display: none;}
         </style>
         """, unsafe_allow_html=True)
@@ -363,6 +365,7 @@ st.set_page_config(page_title="Fieldbook")
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
+header [data-testid="stToolbar"] {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 </style>
