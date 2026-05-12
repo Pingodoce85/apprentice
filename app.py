@@ -158,6 +158,22 @@ def extract_text_from_storage():
                     text = extract_with_vision(pdf_bytes, blob.name)
             all_text.append({"filename": blob.name, "content": text})
 
+    for blob in container_client.list_blobs():
+        if (blob.name.endswith(".xlsx") or blob.name.endswith(".xls")) and blob.name not in cached_filenames:
+            blob_client = container_client.get_blob_client(blob.name)
+            file_bytes = blob_client.download_blob().readall()
+            from excel_extractor import extract_text_from_excel
+            text = extract_text_from_excel(file_bytes, blob.name)
+            all_text.append({"filename": blob.name, "content": text})
+
+    for blob in container_client.list_blobs():
+        if (blob.name.endswith(".docx") or blob.name.endswith(".doc")) and blob.name not in cached_filenames:
+            blob_client = container_client.get_blob_client(blob.name)
+            file_bytes = blob_client.download_blob().readall()
+            from word_extractor import extract_text_from_word
+            text = extract_text_from_word(file_bytes, blob.name)
+            all_text.append({"filename": blob.name, "content": text})
+
     try:
         cache_blob = container_client.get_blob_client(cache_blob_name)
         cache_blob.upload_blob(json.dumps(all_text), overwrite=True)
