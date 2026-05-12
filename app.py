@@ -226,7 +226,7 @@ def extract_with_vision(pdf_bytes, filename):
             full_text += f"\n[Page {i+1}]\n"
             full_text += response.choices[0].message.content
     except Exception as e:
-        full_text = f"Vision extraction failed: {e}"
+            full_text = f"Vision extraction failed: {e}"
     return full_text
 
 def ask_question_stream(question, documents):
@@ -236,6 +236,15 @@ def ask_question_stream(question, documents):
     if pinecone_context:
         context = pinecone_context
         context += enrich_with_glossary(question, glossary)
+        procore_keywords = ["rfi", "submittal", "procore", "procure", "procore", "prorcore", "approved", "rejected", "pending", "project"]
+        if any(word in question.lower() for word in procore_keywords):
+            try:
+                from procore_rag import fetch_procore_context
+                procore_context = fetch_procore_context(question)
+                if procore_context:
+                    context += procore_context
+            except Exception as e:
+                print("Procore error: " + str(e))
         stream = client.chat.completions.create(
             model=deployment,
             stream=True,
@@ -244,7 +253,7 @@ def ask_question_stream(question, documents):
                     "role": "system",
                     "content": (
                         "You are an expert assistant for a mechanical contracting company. "
-                        "Answer questions based ONLY on the provided construction documents. "
+                        "Answer questions based on the provided construction documents and any Procore project data included in the context. "
                         "Always cite the document name and relevant details in your answer. "
                         "If the answer is not in the documents, say so clearly.\n\n"
                         "Documents:" + context
@@ -312,7 +321,18 @@ def ask_question_stream(question, documents):
                     context += "\n\nRECENT EMAILS:\n"
                     context += format_emails_for_context(emails)
         except Exception as e:
-            pass
+            print("Procore error: " + str(e))
+
+    procore_keywords = ["rfi", "submittal", "procore", "procure", "prorcore", "approved", "rejected", "pending", "project"]
+    if any(word in question.lower() for word in procore_keywords):
+        try:
+            from procore_rag import fetch_procore_context
+            procore_context = fetch_procore_context(question)
+            print("PROCORE CONTEXT:", procore_context[:200])
+            if procore_context:
+                context += procore_context
+        except Exception as e:
+            print("Procore error: " + str(e)) 
 
     citation_hint = "\n\nSections searched: " + "; ".join(citation_notes)
 
@@ -324,7 +344,7 @@ def ask_question_stream(question, documents):
                 "role": "system",
                 "content": (
                     f"You are an expert assistant for a mechanical contracting company. "
-                    f"Answer questions based ONLY on the provided construction documents. "
+                    f"Answer questions based on the provided construction documents and any Procore project data included in the context. "
                     f"Always cite the document name, section title, and page number in your answer. "
                     f"If the answer is not in the documents, say so clearly.\n\n"
                     f"Documents:{context}{citation_hint}"
