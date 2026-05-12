@@ -149,10 +149,17 @@ def extract_text_from_storage():
                         except:
                             pass
                 text += page_text
-            if len(text.strip()) < 100:
+            def is_meaningful(t):
+                import re
+                clean = re.sub(r'<[^>]+>', '', t)
+                clean = re.sub(r'\s+', ' ', clean).strip()
+                words = [w for w in clean.split() if len(w) > 2]
+                return len(words) > 50
+
+            if not is_meaningful(text):
                 from doc_intelligence import extract_with_document_intelligence
                 di_text = extract_with_document_intelligence(pdf_bytes)
-                if di_text and len(di_text.strip()) > 100:
+                if di_text and is_meaningful(di_text):
                     text = di_text
                 else:
                     text = extract_with_vision(pdf_bytes, blob.name)
@@ -223,6 +230,34 @@ def extract_with_vision(pdf_bytes, filename):
     return full_text
 
 def ask_question_stream(question, documents):
+    from pinecone_store import search_pinecone
+
+    pinecone_context = search_pinecone(question, client)
+    if pinecone_context:
+        context = pinecone_context
+        context += enrich_with_glossary(question, glossary)
+        stream = client.chat.completions.create(
+            model=deployment,
+            stream=True,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert assistant for a mechanical contracting company. "
+                        "Answer questions based ONLY on the provided construction documents. "
+                        "Always cite the document name and relevant details in your answer. "
+                        "If the answer is not in the documents, say so clearly.\n\n"
+                        "Documents:" + context
+                    )
+                },
+                {"role": "user", "content": question}
+            ]
+        )
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content
+        return
+
     from toc_extractor import extract_toc, extract_section_text
     from section_router import route_question_to_section
     from azure.storage.blob import BlobServiceClient
@@ -253,10 +288,10 @@ def ask_question_stream(question, documents):
                     citation_notes.append(filename + " -> " + section["title"] + ", p." + str(section["start_page"]))
                 context += "\n\nFull document fallback: " + filename + "\n" + doc["content"][:50000]
             else:
-                context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
+                context += "\n\nDocument: " + filename + "\n" + doc["content"][:3000]
                 citation_notes.append(filename + " -> full document search")
         except Exception as e:
-            context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
+            context += "\n\nDocument: " + filename + "\n" + doc["content"][:3000]
 
     context += enrich_with_glossary(question, glossary)
 
