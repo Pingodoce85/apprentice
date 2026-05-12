@@ -232,6 +232,11 @@ def extract_with_vision(pdf_bytes, filename):
     return full_text
 
 def ask_question_stream(question, documents):
+    doc_keywords = ["what documents", "what do you have", "what's in the database", "whats in the database", "what files", "what data do you have", "what can you access", "what information do you have"]
+    if any(phrase in question.lower() for phrase in doc_keywords):
+        yield "Fieldbook has access to P&J project documents, specifications, subcontracts, plumbing and HVAC drawings, submittal logs, RFIs, email correspondence, and live Procore project data. Ask me anything specific and I'll find it."
+        return
+
     from pinecone_store import search_pinecone
 
     pinecone_context = search_pinecone(question, client)
