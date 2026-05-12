@@ -1,25 +1,53 @@
 import os
+import json
 import msal
 import requests
 
-def get_graph_token():
-    tenant_id = os.getenv('AZURE_AD_TENANT_ID')
-    client_id = os.getenv('AZURE_AD_CLIENT_ID')
-    client_secret = os.getenv('AZURE_AD_CLIENT_SECRET')
-    app = msal.ConfidentialClientApplication(
-        client_id,
-        authority=f"https://login.microsoftonline.com/{tenant_id}",
-        client_credential=client_secret
-    )
-    result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
-    return result.get("access_token")
+TOKEN_CACHE_FILE = "/tmp/fieldbook_token_cache.json"
 
-def fetch_emails(user_email, max_emails=50):
-    token = get_graph_token()
+def get_graph_token_device_flow():
+    client_id = os.getenv('AZURE_AD_CLIENT_ID')
+    
+    cache = msal.SerializableTokenCache()
+    if os.path.exists(TOKEN_CACHE_FILE):
+        cache.deserialize(open(TOKEN_CACHE_FILE).read())
+    
+    app = msal.PublicClientApplication(
+        client_id,
+        authority="https://login.microsoftonline.com/consumers",
+        token_cache=cache
+    )
+    
+    accounts = app.get_accounts()
+    if accounts:
+        result = app.acquire_token_silent(
+            scopes=["https://graph.microsoft.com/Mail.Read"],
+            account=accounts[0]
+        )
+        if result and "access_token" in result:
+            open(TOKEN_CACHE_FILE, "w").write(cache.serialize())
+            return result["access_token"]
+    
+    flow = app.initiate_device_flow(scopes=["https://graph.microsoft.com/Mail.Read"])
+    if "message" not in flow:
+        print("Error starting device flow:", flow)
+        return None
+    
+    print(flow["message"])
+    result = app.acquire_token_by_device_flow(flow)
+    
+    if "access_token" in result:
+        open(TOKEN_CACHE_FILE, "w").write(cache.serialize())
+        return result["access_token"]
+    return None
+
+def fetch_emails(user_email=None, max_emails=50):
+    token = get_graph_token_device_flow()
     if not token:
+        print("Could not get token")
         return []
     headers = {"Authorization": f"Bearer {token}"}
-    url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages"
+    url = "https://graph.microsoft.com/v1.0/me/messages"
     params = {
         "$top": max_emails,
         "$select": "subject,from,receivedDateTime,body,hasAttachments",
