@@ -339,6 +339,15 @@ def ask_question_stream(question, documents):
 
 
 st.set_page_config(page_title="Fieldbook")
+
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Fieldbook")
 st.caption("Your personal AI-powered mechanical contracting assistant.")
 
