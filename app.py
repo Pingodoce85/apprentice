@@ -243,6 +243,19 @@ def ask_question_stream(question, documents):
             context += "\n\nDocument: " + filename + "\n" + doc["content"][:90000]
 
     context += enrich_with_glossary(question, glossary)
+
+    if "email" in question.lower() or "wrote" in question.lower() or "sent" in question.lower() or "said" in question.lower():
+        try:
+            from email_rag import fetch_emails, format_emails_for_context
+            user_email = os.getenv("OUTLOOK_USER_EMAIL") or st.secrets.get("OUTLOOK_USER_EMAIL")
+            if user_email:
+                emails = fetch_emails(user_email, max_emails=30)
+                if emails:
+                    context += "\n\nRECENT EMAILS:\n"
+                    context += format_emails_for_context(emails)
+        except Exception as e:
+            pass
+
     citation_hint = "\n\nSections searched: " + "; ".join(citation_notes)
 
     stream = client.chat.completions.create(
