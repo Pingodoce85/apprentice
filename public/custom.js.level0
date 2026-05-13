@@ -1,9 +1,0 @@
-setTimeout(function() {
-    if (!document.getElementById('fieldbook-title')) {
-        var title = document.createElement('div');
-        title.id = 'fieldbook-title';
-        title.innerHTML = '<h1 style="text-align:center;font-size:5rem;font-weight:700;color:white;margin:0;padding:0;letter-spacing:-2px;">Fieldbook</h1><p style="text-align:center;color:#888;font-size:1rem;margin-top:0.5rem;">Your personal AI-powered mechanical contracting assistant.</p>';
-        title.style.cssText = 'position:fixed;top:35%;left:50%;transform:translate(-50%,-50%);z-index:10;width:100%;pointer-events:none;';
-        document.body.appendChild(title);
-    }
-}, 500);
