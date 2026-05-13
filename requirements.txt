@@ -1,6 +1,6 @@
+chainlit
 openai
 pymupdf
-streamlit
 python-dotenv
 azure-storage-blob
 msal
@@ -9,7 +9,6 @@ pillow
 pandas
 opencv-python-headless
 rank-bm25
-azure-ai-formrecognizer
 azure-ai-formrecognizer
 thefuzz
 pinecone
