@@ -1,0 +1,9 @@
+[project]
+enable_telemetry = false
+
+[UI]
+name = "Fieldbook"
+description = "Your personal AI-powered mechanical contracting assistant."
+default_theme = "dark"
+custom_css = "/public/custom.css"
+custom_js = "/public/custom.js"

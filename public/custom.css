@@ -1,0 +1,48 @@
+/* Send button - dark red */
+button[class*="rounded-full"] {
+    background-color: #8B0000 !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+button[class*="rounded-full"]:hover {
+    background-color: #6B0000 !important;
+}
+button[class*="rounded-full"] svg {
+    width: 24px !important;
+    height: 24px !important;
+}
+
+/* Hide Chainlit branding */
+.watermark, div.watermark, div.watermark * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Fieldbook copyright */
+body::after {
+    content: "Fieldbook © 2026";
+    position: fixed;
+    bottom: 12px;
+    left: 16px;
+    font-size: 0.9rem;
+    z-index: 9999;
+    pointer-events: none;
+}
+html.dark body::after { color: rgba(255,255,255,0.4) !important; }
+html.light body::after { color: rgba(0,0,0,0.5) !important; }
+
+/* Fieldbook title colors */
+html.dark #fieldbook-title h1, html.dark #fieldbook-title p { color: white !important; }
+html.light #fieldbook-title h1, html.light #fieldbook-title p { color: black !important; }
+
+/* Header spacing */
+header { padding-top: 60px !important; }
+
+/* Hide avatar circles */
+span.relative.flex.h-8.w-8,
+span.relative.flex.shrink-0 {
+    display: none !important;
+}

@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Global font */
+* {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Hide Chainlit branding */
+.watermark, div.watermark, div.watermark * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Hide readme button */
+#readme-button,
+button[data-testid="readme-button"],
+a[href*="readme"],
+.readme-button {
+    display: none !important;
+}
+
+/* Send button - dark red */
+button[class*="rounded-full"] {
+    background-color: #8B0000 !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+button[class*="rounded-full"]:hover {
+    background-color: #6B0000 !important;
+}
+button[class*="rounded-full"] svg {
+    width: 24px !important;
+    height: 24px !important;
+}
+
+/* Fieldbook copyright bottom left */
+body::after {
+    content: "Fieldbook © 2026";
+    position: fixed;
+    bottom: 12px;
+    left: 16px;
+    font-size: 0.9rem;
+    z-index: 9999;
+    pointer-events: none;
+}
+html.dark body::after { color: rgba(255,255,255,0.4) !important; }
+html.light body::after { color: rgba(0,0,0,0.5) !important; }
+
+/* Fieldbook title colors */
+html.dark #fieldbook-title h1, html.dark #fieldbook-title p { color: white !important; }
+html.light #fieldbook-title h1, html.light #fieldbook-title p { color: black !important; }
+
+/* Larger input text */
+#message-composer textarea,
+#message-composer input {
+    font-size: 1.1rem !important;
+}
+
+/* Larger message text */
+[id^="step-"] p,
+[id^="step-"] li,
+[id^="step-"] span,
+[id^="step-"] td {
+    font-size: 1.05rem !important;
+    line-height: 1.7 !important;
+}
+
+/* Header spacing for Level 1 brand */
+header {
+    padding-top: 60px !important;
+}
+
+/* Hide all avatars completely */
+[data-radix-avatar-fallback],
+[data-radix-avatar-image],
+[data-radix-avatar-root] {
+    display: none !important;
+}

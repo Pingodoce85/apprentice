@@ -1,0 +1,77 @@
+setTimeout(function() {
+    // Landing page title (Level 0)
+    if (!document.getElementById('fieldbook-title')) {
+        var title = document.createElement('div');
+        title.id = 'fieldbook-title';
+        title.innerHTML = '<h1 style="text-align:center;font-size:5rem;font-weight:700;color:white;margin:0;padding:0;letter-spacing:-2px;">Fieldbook</h1><p style="text-align:center;color:#888;font-size:1rem;margin-top:0.5rem;">Your personal AI-powered mechanical contracting assistant.</p>';
+        title.style.cssText = 'position:fixed;top:35%;left:50%;transform:translate(-50%,-50%);z-index:10;width:100%;pointer-events:none;';
+        document.body.appendChild(title);
+    }
+
+    // Top left brand - hidden initially, shown in Level 1
+    if (!document.getElementById('fieldbook-brand')) {
+        var brand = document.createElement('div');
+        brand.id = 'fieldbook-brand';
+        brand.innerText = 'Fieldbook';
+        brand.style.cssText = 'position:fixed;top:50px;left:16px;font-size:2.2rem;font-weight:700;letter-spacing:-1px;z-index:9999;color:white;display:none;cursor:pointer;text-decoration:none;'; document.documentElement.classList.contains('light') && (brand.style.color = 'black');
+        document.body.appendChild(brand);
+    }
+
+    // Move pencil icon down
+    var iconStyle = document.createElement('style');
+    iconStyle.innerHTML = 'a[href="/"], button[aria-label="New chat"], [class*="new-chat"], header a { margin-top:60px !important; position:relative !important; top:60px !important; }';
+    document.head.appendChild(iconStyle);
+
+    // Inject centered composer style
+    if (!document.getElementById('composer-style')) {
+        var style = document.createElement('style');
+        style.id = 'composer-style';
+        style.innerHTML = '#message-composer { position:fixed !important; bottom:auto !important; top:52% !important; left:50% !important; transform:translateX(-50%) !important; width:600px !important; max-width:72% !important; }';
+        document.head.appendChild(style);
+    }
+
+    // Make brand clickable - go back to Level 0
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'fieldbook-brand') {
+            var confirmed = confirm('Are you sure you want to start a new session? All current conversations will be lost.');
+            if (confirmed) window.location.reload();
+        }
+    });
+
+    // Hide all avatars initially
+    var avatarStyle = document.createElement('style');
+    avatarStyle.id = 'hide-avatar';
+    avatarStyle.innerHTML = 'img[src*="avatar"], span[data-radix-avatar-image] { display:none !important; }';
+    document.head.appendChild(avatarStyle);
+
+    function enterConversationMode() {
+        // Show avatars in conversation
+        var s = document.getElementById('hide-avatar');
+        if (s) s.remove();
+        var title = document.getElementById('fieldbook-title');
+        if (title) title.style.display = 'none';
+        var brand = document.getElementById('fieldbook-brand');
+        if (brand) brand.style.display = 'block';
+        var style = document.getElementById('composer-style');
+        if (style) style.remove();
+    }
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('button');
+        if (btn && btn.closest('#message-composer')) enterConversationMode();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) enterConversationMode();
+    });
+}, 500);
+
+// Load Inter font and apply sizing
+var link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+document.head.appendChild(link);
+
+var fontStyle = document.createElement('style');
+fontStyle.innerHTML = '* { font-family: Inter, sans-serif !important; } [id^="step-"] p, [id^="step-"] li, [id^="step-"] span { font-size: 1.1rem !important; line-height: 1.75 !important; } #message-composer textarea { font-size: 1.1rem !important; }';
+document.head.appendChild(fontStyle);

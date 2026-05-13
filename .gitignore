@@ -1,3 +1,15 @@
 .env
 .DS_Store
 
+__pycache__/
+*.pyc
+procore_token.json
+construction-gpt.zip
+public/custom.css.backup2
+public/custom.css.level0
+public/custom.css.level1
+public/custom.js.backup2
+public/custom.js.level0
+public/custom.js.level1
+.chainlit/config.toml.backup
+Screenshot*.png
